@@ -12,13 +12,29 @@ tab = tt.Texttable()
 headings = ['Section', 'Visit count']
 tab.header(headings)
 
+class TableData():
 
-def printTable():
-    sections = ['Sec11', 'Sec12', 'Sec13']
+    def __init__(self, aInSection, aInCount):
+        self.section = "/" + aInSection
+        self.count = aInCount
 
-    vCount = ['100', '200', '300']
+    def getSectionAndCount(self):
+        return self.section, self.count
 
-    for row in zip(sections, vCount):
+
+def printTable(aInList=None):
+    #sections = ['Sec11', 'Sec12', 'Sec13']
+
+    #vCount = ['100', '200', '300']
+
+    #for row in zip(sections, vCount):
+    #    tab.add_row(row)
+
+    for item in aInList:
+        section, count = item.getSectionAndCount()
+        row = []
+        row.append(section)
+        row.append(count)
         tab.add_row(row)
  
     res = tab.draw()
@@ -28,7 +44,14 @@ def printTable():
 def displayTopHits(aInStartTime, aInEventName):
     nowTime = time.time()
     elapsed = int(nowTime-aInStartTime)
-    printTable()
+    top10 = esquery.getTopHits(10)
+    
+    tableDataList = []
+    for item in top10:
+        newData = TableData(item["key"], item["doc_count"])
+        tableDataList.append(newData)
+        
+    printTable(tableDataList)
     print("EVENT: {} name={} elapsed={}".format(time.ctime(nowTime), aInEventName, elapsed))
 
 

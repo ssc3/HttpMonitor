@@ -46,7 +46,7 @@ def checkEsServerStatus(aInSession):
     return jRes["count"]
     
 
-def createSectionFieldData(aInSession):
+def esCreateSectionFieldData(aInSession):
     method = "PUT"
     uri = "_mapping/doc"
     body = {
@@ -63,16 +63,37 @@ def createSectionFieldData(aInSession):
                  }
              }
          }
-    print ("Preparing")
     res = prepareRestCallAndExecute(aInSession, method, uri, body)
     jRes = res.json()
     print (res.text)
     return jRes["acknowledged"]
-     
-def getTopRequests(aInNum):
-    esGetRequestsCount(globalSession)
 
+def esGetAggregate(aInSession):
+    method = "POST"
+    uri = "_search"
+    body = {
+               "size": 0,
+               "aggs":{
+                   "req_count": {
+                       "terms":{
+                           "field": "section"
+                        }
+                    }
+                }
+            }
+    res = prepareRestCallAndExecute(aInSession, method, uri, body)
+    jRes = res.json()
+    print (res.text)
+    return jRes["aggregations"]["req_count"]["buckets"]
+
+    
+     
+def getTopHits(aInNum):
+    buckets = esGetAggregate(globalSession)
+    return buckets[:aInNum]
+    
+        
 def init():
-    createSectionFieldData(globalSession)
+    esCreateSectionFieldData(globalSession)
     return checkEsServerStatus(globalSession)
     
