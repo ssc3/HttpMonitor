@@ -10,6 +10,7 @@ ES_INDEX = "default_index"
 ES_OPERATION = "_search"
 ES_PRETTY = "pretty"
 
+DEBUG=0
 
 globalSession = requests.session()
 
@@ -42,7 +43,8 @@ def checkEsServerStatus(aInSession):
     uri = "_count"
     res = prepareRestCallAndExecute(aInSession, method, uri)
     jRes = res.json()
-    print (res.text)
+    if (DEBUG):
+        print (res.text)
     return jRes["count"]
     
 
@@ -65,7 +67,8 @@ def esCreateSectionFieldData(aInSession):
          }
     res = prepareRestCallAndExecute(aInSession, method, uri, body)
     jRes = res.json()
-    print (res.text)
+    if (DEBUG):
+        print (res.text)
     return jRes["acknowledged"]
 
 def esGetAggregate(aInSession):
@@ -83,15 +86,37 @@ def esGetAggregate(aInSession):
             }
     res = prepareRestCallAndExecute(aInSession, method, uri, body)
     jRes = res.json()
-    print (res.text)
+    if (DEBUG):
+        print (res.text)
     return jRes["aggregations"]["req_count"]["buckets"]
 
-    
+
+def esGetHitCountLastMins(aInSession, aInMins):
+    method = "POST"
+    uri = "_count"
+    body = {
+               "query":{
+                   "range":{
+                       "@timestamp":{
+                           "gt": "now-2d"
+                       }
+                   }
+               }
+           }
+    res = prepareRestCallAndExecute(aInSession, method, uri, body)
+    jRes = res.json()
+    if (DEBUG):
+        print (res.text)
+    return jRes["count"]
+
      
 def getTopHits(aInNum):
     buckets = esGetAggregate(globalSession)
     return buckets[:aInNum]
-    
+
+def getHitCountLastMins(aInMins):
+    count = esGetHitCountLastMins(globalSession, aInMins)
+    return count
         
 def init():
     esCreateSectionFieldData(globalSession)

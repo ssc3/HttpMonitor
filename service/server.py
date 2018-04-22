@@ -3,14 +3,14 @@
 import logging
 import sched
 import time
-import texttable as tt
 import esquery
 import traceback
+from prettytable import PrettyTable
 
 
-tab = tt.Texttable()
+tab = PrettyTable()
 headings = ['Section', 'Visit count']
-tab.header(headings)
+tab.field_names = headings
 
 class TableData():
 
@@ -23,12 +23,8 @@ class TableData():
 
 
 def printTable(aInList=None):
-    #sections = ['Sec11', 'Sec12', 'Sec13']
 
-    #vCount = ['100', '200', '300']
-
-    #for row in zip(sections, vCount):
-    #    tab.add_row(row)
+    tab.clear_rows()
 
     for item in aInList:
         section, count = item.getSectionAndCount()
@@ -37,27 +33,48 @@ def printTable(aInList=None):
         row.append(count)
         tab.add_row(row)
  
-    res = tab.draw()
-    print (res)
+    print (tab)
 
-
-def displayTopHits(aInStartTime, aInEventName):
+def startEventSection(aInScheduler, aInStartTime, aInEventName):
     nowTime = time.time()
     elapsed = int(nowTime-aInStartTime)
+    print("EVENT: {} name={} elapsed={} secs".format(time.ctime(nowTime), aInEventName, elapsed))
+
+
+def endEventSection(aInScheduler, aInStartTime, aInEventName):
+    print("----------------- EVENT DONE -----------------------")
+
+
+
+def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority):
+    startEventSection(aInScheduler, aInStartTime, aInEventName)
+
     top10 = esquery.getTopHits(10)
-    
     tableDataList = []
     for item in top10:
         newData = TableData(item["key"], item["doc_count"])
         tableDataList.append(newData)
         
     printTable(tableDataList)
-    print("EVENT: {} name={} elapsed={}".format(time.ctime(nowTime), aInEventName, elapsed))
 
 
+    aInScheduler.enter(aInPeriod, aInPriority, displayTopHits, (aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority))
+    endEventSection(aInScheduler, aInStartTime, aInEventName)
+
+
+
+def alertTrafficThreshold(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority):
+    startEventSection(aInScheduler, aInStartTime, aInEventName)
+    
+    count = esquery.getHitCountLastMins("2d")
+    threshold = 5
+    if (count > threshold):
+        print("***ALERT ALERT ALERT ***: Threshold crossed in last 2 seconds. Threshold={}, Hits={}".format(threshold, count))
+
+    aInScheduler.enter(aInPeriod, aInPriority, alertTrafficThreshold, (aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority))
+    endEventSection(aInScheduler, aInStartTime, aInEventName)
 
 def begin():
-    print("In Begin")
     try:
         docCount = esquery.init()
         print ("ElasticSearch started with " + str(docCount) + " docs")
@@ -66,10 +83,10 @@ def begin():
         print(traceback.format_exc())
 
     scheduler = sched.scheduler(time.time, time.sleep)
-
     startTime = time.time()
-    print("START TIME = " + time.ctime(startTime))
-    scheduler.enter(5, 1, displayTopHits, (startTime, "displayTopHits"))
+    print("EVENT: {} name={} elapsed={} secs".format(time.ctime(startTime), "START", 0))
+    scheduler.enter(5, 1, displayTopHits, (scheduler, startTime, "displayTopHits", 5, 1))
+    scheduler.enter(10, 2, alertTrafficThreshold, (scheduler, startTime, "Traffic ALERT", 10, 2))
 
     scheduler.run()
 
