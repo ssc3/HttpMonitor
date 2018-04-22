@@ -5,6 +5,7 @@ import sched
 import time
 import esquery
 import traceback
+import sys
 from prettytable import PrettyTable
 
 
@@ -77,19 +78,22 @@ def alertTrafficThreshold(aInScheduler, aInStartTime, aInEventName, aInPeriod, a
 def begin():
     try:
         docCount = esquery.init()
-        print ("ElasticSearch started with " + str(docCount) + " docs")
+        
     except Exception:
         print ("Could not initialize esquery")
         print(traceback.format_exc())
+        sys.exit(1)
 
+    print ("ElasticSearch started with " + str(docCount) + " docs")
     scheduler = sched.scheduler(time.time, time.sleep)
     startTime = time.time()
     print("EVENT: {} name={} elapsed={} secs".format(time.ctime(startTime), "START", 0))
     scheduler.enter(5, 1, displayTopHits, (scheduler, startTime, "displayTopHits", 5, 1))
     scheduler.enter(10, 2, alertTrafficThreshold, (scheduler, startTime, "Traffic ALERT", 10, 2))
-
+    
     scheduler.run()
 
+    
 
 if __name__=="__main__":
     logging.info("Starting HTTP Monitor")

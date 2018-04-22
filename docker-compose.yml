@@ -10,6 +10,6 @@ services:
     volumes:
       - ./service:/home/service
       - ./logstash/conf/pipeline.conf:/etc/logstash/conf.d/pipeline.conf
-      - ./logstash/tests/logstash-tutorial.log:/home/Downloads/logstash-tutorial.log
+      - ./logstash/tests/access.log:/home/Downloads/access.log
 
 
