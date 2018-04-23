@@ -49,6 +49,7 @@ def startEventSection(aInScheduler, aInStartTime, aInEventName):
 
 def endEventSection(aInScheduler, aInStartTime, aInEventName):
     print("----------------- EVENT DONE -----------------------")
+    print("----------------------------------------------------\n\n")
 
 
 
@@ -74,7 +75,16 @@ def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPrior
         
     printTable(tableDataList)
 
+    ipBuckets = esquery.getTopIpLastMins()
+    print("--Additional Info--")
+    topIp = ""
+    try:
+        topIp = ipBuckets[0]["key"]
+    except:
+        topIp = ""
 
+    print("TOP client IP last 10s: " + str(topIp))
+    
     aInScheduler.enter(aInPeriod, aInPriority, displayTopHits, (aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority))
     endEventSection(aInScheduler, aInStartTime, aInEventName)
 

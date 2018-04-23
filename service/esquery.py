@@ -52,19 +52,30 @@ def esCreateSectionFieldData(aInSession):
     method = "PUT"
     uri = "_mapping/doc"
     body = {
-            "properties": {
-                "section" : {
-                    "type" : "text",
-                    "fields" : {
-                        "keyword" : {
-                            "type" : "keyword",
-                            "ignore_above" : 256
-                         }
-                     },
-                     "fielddata" : True
-                 }
-             }
-         }
+               "properties":{
+                   "section" : {
+                       "type" : "text",
+                       "fields" : {
+                           "keyword" : {
+                               "type" : "keyword",
+                               "ignore_above" : 256
+                           }
+                       },
+                       "fielddata" : True
+                   },
+                   "clientip" : {
+                       "type" : "text",
+                           "fields" : {
+                               "keyword" : {
+                               "type" : "keyword",
+                               "ignore_above" : 256
+                           }
+                       },
+                       "fielddata" : True
+                   }
+               }
+           }  
+
     res = prepareRestCallAndExecute(aInSession, method, uri, body)
     jRes = res.json()
     if (DEBUG):
@@ -108,6 +119,45 @@ def esGetAggregate(aInSession):
     return jRes["aggregations"]["overall"]["buckets"], jRes["aggregations"]["by_time"]["buckets"][0]["top_count"]["buckets"]
 
 
+def esGetAggregateIp(aInSession):
+    method = "POST"
+    uri = "_search"
+    body = {
+               "size": 0,
+               "aggs":{
+                   "overall": {
+                       "terms": {
+                           "field": "clientip"
+                       }
+                   },
+                   "by_time": {
+                       "date_range": {
+                           "field": "@timestamp",
+                           "ranges": [
+                               { "from": "now/s-10s" }
+                           ]
+                       },
+                       "aggs": {
+                           "top_count": {
+                               "terms": {
+                                   "field": "clientip",
+                                   "order": {"_count": "desc"}
+                               }
+                           }
+                       }
+                   }
+               }
+           }
+
+    res = prepareRestCallAndExecute(aInSession, method, uri, body)
+    jRes = res.json()
+    if (DEBUG):
+        print (res.text)
+    return jRes["aggregations"]["by_time"]["buckets"][0]["top_count"]["buckets"]
+
+
+
+
 def esGetHitCountLastMins(aInSession, aInMins):
     method = "POST"
     uri = "_count"
@@ -131,8 +181,10 @@ def getTopHits(aInNum):
     buckets = esGetAggregate(globalSession)
     return buckets[:aInNum]
 
-def getTopHitsLastMins(aInNum, aInMins):
-    buckets
+def getTopIpLastMins():
+    buckets = esGetAggregateIp(globalSession)
+    return buckets[:1]
+
 
 def getHitCountLastMins(aInMins):
     count = esGetHitCountLastMins(globalSession, aInMins)
