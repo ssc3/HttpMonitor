@@ -65,8 +65,11 @@ def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPrior
         resultObjMap[item["key"]] = newData
 
     for item in top10timed:
-        curObj = resultObjMap.get(item["key"])
-        curObj.setTimed(item["doc_count"])
+        try:  
+            curObj = resultObjMap.get(item["key"])
+            curObj.setTimed(item["doc_count"])
+        except:
+            pass
 
     for k, v in resultObjMap.items():
         tableDataList.append(v)
@@ -108,7 +111,7 @@ def begin():
         docCount = esquery.init()
         
     except Exception:
-        print ("Could not initialize esquery")
+        print ("Could not initialize esquery. Restart docker")
         print(traceback.format_exc())
         sys.exit(1)
 
@@ -124,5 +127,5 @@ def begin():
     
 
 if __name__=="__main__":
-    logging.info("Starting HTTP Monitor")
+    print("Starting HTTP Monitor")
     begin()
