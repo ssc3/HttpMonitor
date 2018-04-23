@@ -3,7 +3,7 @@ import datetime
 import random
 timestr = time.strftime("%Y%m%d-%H%M%S")
 
-f = open('access.log','w')
+f = open('logstash/tests/access.log','w')
 
 ips=["123.221.14.56","16.180.70.237","10.182.189.79","218.193.16.244","198.122.118.164","114.214.178.92","233.192.62.103","244.157.45.12","81.73.150.239","237.43.24.118"]
 referers=["-","http://www.casualcyclist.com","http://bestcyclingreviews.com/top_online_shops","http://bleater.com","http://searchengine.com"]
@@ -12,7 +12,7 @@ useragents=["Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)","Mozilla/5.0 (M
 
 otime = datetime.datetime(2013,10,10)
 
-for i in range(0,500):
+for i in range(0,50000):
 	increment = datetime.timedelta(seconds=random.randint(30,300))
 	otime += increment
 	uri = random.choice(resources)

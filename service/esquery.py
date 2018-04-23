@@ -77,18 +77,35 @@ def esGetAggregate(aInSession):
     body = {
                "size": 0,
                "aggs":{
-                   "req_count": {
-                       "terms":{
+                   "overall": {
+                       "terms": {
                            "field": "section"
-                        }
-                    }
-                }
-            }
+                       }
+                   },
+                   "by_time": {
+                       "date_range": {
+                           "field": "@timestamp",
+                           "ranges": [
+                               { "from": "now/s-10s" }
+                           ]
+                       },
+                       "aggs": {
+                           "top_count": {
+                               "terms": {
+                                   "field": "section"
+                               }   
+                           }
+                       }
+                   }
+               }
+           }
+
+
     res = prepareRestCallAndExecute(aInSession, method, uri, body)
     jRes = res.json()
     if (DEBUG):
         print (res.text)
-    return jRes["aggregations"]["req_count"]["buckets"]
+    return jRes["aggregations"]["overall"]["buckets"], jRes["aggregations"]["by_time"]["buckets"][0]["top_count"]["buckets"]
 
 
 def esGetHitCountLastMins(aInSession, aInMins):
@@ -98,7 +115,7 @@ def esGetHitCountLastMins(aInSession, aInMins):
                "query":{
                    "range":{
                        "@timestamp":{
-                           "gt": "now-2d"
+                           "gt": "now-"+aInMins
                        }
                    }
                }
@@ -113,6 +130,9 @@ def esGetHitCountLastMins(aInSession, aInMins):
 def getTopHits(aInNum):
     buckets = esGetAggregate(globalSession)
     return buckets[:aInNum]
+
+def getTopHitsLastMins(aInNum, aInMins):
+    buckets
 
 def getHitCountLastMins(aInMins):
     count = esGetHitCountLastMins(globalSession, aInMins)

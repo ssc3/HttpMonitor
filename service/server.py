@@ -10,7 +10,7 @@ from prettytable import PrettyTable
 
 
 tab = PrettyTable()
-headings = ['Section', 'Visit count']
+headings = ['Section', 'Total HITs', 'HITs last 10s']
 tab.field_names = headings
 
 class TableData():
@@ -18,9 +18,13 @@ class TableData():
     def __init__(self, aInSection, aInCount):
         self.section = "/" + aInSection
         self.count = aInCount
+        self.timedCount = 0
 
     def getSectionAndCount(self):
-        return self.section, self.count
+        return self.section, self.count, self.timedCount
+
+    def setTimed(self, aInTimedCount):
+        self.timedCount = aInTimedCount
 
 
 def printTable(aInList=None):
@@ -28,10 +32,11 @@ def printTable(aInList=None):
     tab.clear_rows()
 
     for item in aInList:
-        section, count = item.getSectionAndCount()
+        section, count, timedCount = item.getSectionAndCount()
         row = []
         row.append(section)
         row.append(count)
+        row.append(timedCount)
         tab.add_row(row)
  
     print (tab)
@@ -39,7 +44,7 @@ def printTable(aInList=None):
 def startEventSection(aInScheduler, aInStartTime, aInEventName):
     nowTime = time.time()
     elapsed = int(nowTime-aInStartTime)
-    print("EVENT: {} name={} elapsed={} secs".format(time.ctime(nowTime), aInEventName, elapsed))
+    print("NEW EVENT: {} name={} elapsed={} secs".format(time.ctime(nowTime), aInEventName, elapsed))
 
 
 def endEventSection(aInScheduler, aInStartTime, aInEventName):
@@ -50,11 +55,20 @@ def endEventSection(aInScheduler, aInStartTime, aInEventName):
 def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority):
     startEventSection(aInScheduler, aInStartTime, aInEventName)
 
-    top10 = esquery.getTopHits(10)
+    top10, top10timed = esquery.getTopHits(10)
     tableDataList = []
+
+    resultObjMap = {}
     for item in top10:
         newData = TableData(item["key"], item["doc_count"])
-        tableDataList.append(newData)
+        resultObjMap[item["key"]] = newData
+
+    for item in top10timed:
+        curObj = resultObjMap.get(item["key"])
+        curObj.setTimed(item["doc_count"])
+
+    for k, v in resultObjMap.items():
+        tableDataList.append(v)
         
     printTable(tableDataList)
 
@@ -67,10 +81,12 @@ def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPrior
 def alertTrafficThreshold(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority):
     startEventSection(aInScheduler, aInStartTime, aInEventName)
     
-    count = esquery.getHitCountLastMins("2d")
-    threshold = 5
+    count = esquery.getHitCountLastMins("2m")
+    threshold = 30000
     if (count > threshold):
-        print("***ALERT ALERT ALERT ***: Threshold crossed in last 2 seconds. Threshold={}, Hits={}".format(threshold, count))
+        print("***ALERT ALERT ALERT ***: Threshold crossed in last 2 mins. Threshold={}, Hits={}".format(threshold, count))
+    else:
+        print("No Alerts")
 
     aInScheduler.enter(aInPeriod, aInPriority, alertTrafficThreshold, (aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority))
     endEventSection(aInScheduler, aInStartTime, aInEventName)
@@ -88,8 +104,8 @@ def begin():
     scheduler = sched.scheduler(time.time, time.sleep)
     startTime = time.time()
     print("EVENT: {} name={} elapsed={} secs".format(time.ctime(startTime), "START", 0))
-    scheduler.enter(5, 1, displayTopHits, (scheduler, startTime, "displayTopHits", 5, 1))
-    scheduler.enter(10, 2, alertTrafficThreshold, (scheduler, startTime, "Traffic ALERT", 10, 2))
+    scheduler.enter(10, 1, displayTopHits, (scheduler, startTime, "displayTopHits", 10, 1))
+    scheduler.enter(120, 2, alertTrafficThreshold, (scheduler, startTime, "Traffic ALERT", 120, 2))
     
     scheduler.run()
 
