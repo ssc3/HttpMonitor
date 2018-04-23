@@ -69,6 +69,8 @@ def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPrior
 
     for k, v in resultObjMap.items():
         tableDataList.append(v)
+
+    tableDataList.sort(key=lambda x: x.count, reverse=True)
         
     printTable(tableDataList)
 
