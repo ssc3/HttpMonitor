@@ -1,4 +1,4 @@
-# elk-docker# HttpMonitor
+# HttpMonitor
 
 # REQUIREMENTS:
 * docker
