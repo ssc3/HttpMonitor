@@ -13,7 +13,25 @@ tab = PrettyTable()
 headings = ['Section', 'Total HITs', 'HITs last 10s']
 tab.field_names = headings
 
+
+class AlertMsg():
+    '''
+    A class which represents the object to be printed for alerts
+    '''
+
+    def __init__(self, aInTimeStamp, aInMsg, aInCount):
+        self.timeStamp = aInTimeStamp
+        self.msg = aInMsg
+        self.count = aInCount
+
+prevAlertsHistory = []
+sentinelAlert = AlertMsg(0.0, "", 0)
+prevAlertsHistory.append(sentinelAlert)
+
 class TableData():
+    '''
+    A class which represents the object to be printed for HITs summary
+    '''
 
     def __init__(self, aInSection, aInCount):
         self.section = "/" + aInSection
@@ -28,6 +46,9 @@ class TableData():
 
 
 def printTable(aInList=None):
+    '''
+    Print summary of hits in an asciiart console table
+    '''
 
     tab.clear_rows()
 
@@ -45,6 +66,7 @@ def startEventSection(aInScheduler, aInStartTime, aInEventName):
     nowTime = time.time()
     elapsed = int(nowTime-aInStartTime)
     print("NEW EVENT: {} name={} elapsed={} secs".format(time.ctime(nowTime), aInEventName, elapsed))
+    checkAndDisplayAlert(nowTime)
 
 
 def endEventSection(aInScheduler, aInStartTime, aInEventName):
@@ -52,10 +74,43 @@ def endEventSection(aInScheduler, aInStartTime, aInEventName):
     print("----------------------------------------------------\n\n")
 
 
+def printAllAlertMsgs():
+    print('\n')
+    
+    print("Historical Alerts")
+    
+    for item in reversed(prevAlertsHistory):
+        if item.count != 0:
+            print(str(item.timeStamp) + " seconds: " + item.msg)
+
+    print('\n')
+    
+
+def checkAndDisplayAlert(aInTimeStamp):
+    '''
+    Queries datastore to get count of newly found logs in last 2 mins.
+    Prints any new threshold crossing message and all historical alert messages
+    '''
+    count = esquery.getHitCountLastMins("2m")
+    threshold = 30000
+    if (count > threshold):
+        alertMsg = "***NEW NEW NEW: ALERT***: Threshold crossed in last 2 mins. Threshold={}, Hits={}".format(threshold, count) 
+        newAlertItem = AlertMsg(aInTimeStamp, alertMsg, count)
+        lastItem = prevAlertsHistory[-1]
+        if lastItem.count != newAlertItem.count:
+            prevAlertsHistory.append(newAlertItem)
+            print(alertMsg)
+    else:
+        print("No new Alerts")
+    
+    printAllAlertMsgs()
 
 def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority):
+    '''
+    An event which is called every 10s to display top hits and to check for alerts
+    '''
     startEventSection(aInScheduler, aInStartTime, aInEventName)
-
+ 
     top10, top10timed = esquery.getTopHits(10)
     tableDataList = []
 
@@ -91,21 +146,6 @@ def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPrior
     aInScheduler.enter(aInPeriod, aInPriority, displayTopHits, (aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority))
     endEventSection(aInScheduler, aInStartTime, aInEventName)
 
-
-
-def alertTrafficThreshold(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority):
-    startEventSection(aInScheduler, aInStartTime, aInEventName)
-    
-    count = esquery.getHitCountLastMins("2m")
-    threshold = 30000
-    if (count > threshold):
-        print("***ALERT ALERT ALERT ***: Threshold crossed in last 2 mins. Threshold={}, Hits={}".format(threshold, count))
-    else:
-        print("No Alerts")
-
-    aInScheduler.enter(aInPeriod, aInPriority, alertTrafficThreshold, (aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority))
-    endEventSection(aInScheduler, aInStartTime, aInEventName)
-
 def begin():
     try:
         docCount = esquery.init()
@@ -120,7 +160,6 @@ def begin():
     startTime = time.time()
     print("EVENT: {} name={} elapsed={} secs".format(time.ctime(startTime), "START", 0))
     scheduler.enter(10, 1, displayTopHits, (scheduler, startTime, "displayTopHits", 10, 1))
-    scheduler.enter(120, 2, alertTrafficThreshold, (scheduler, startTime, "Traffic ALERT", 120, 2))
     
     scheduler.run()
 

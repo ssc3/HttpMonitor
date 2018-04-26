@@ -4,7 +4,8 @@ import requests
 import logging
 import json
 
-#ES_SERVER_URL = "http://localhost:9200/default_index/_count?pretty"
+# Format for Elasticsearch queries:
+# ES_SERVER_URL = "http://localhost:9200/default_index/_count?pretty"
 ES_SERVER_URL = "http://localhost:9200"
 ES_INDEX = "default_index"
 ES_OPERATION = "_search"
@@ -18,6 +19,11 @@ def generateUrl(*args):
     url = "".join([*args])
     return url
 
+'''
+Elasticsearch private functions. These are the functions to be used internally in this module
+Ideally encapsulate these all in a class. Make below functions private
+'''
+
 def executeRequest(aInSession, aInMethod, aInHeaders, aInUrl, aInBody=None):
     if aInMethod.lower() == "get":
         logging.debug("Executing GET: " + aInUrl)
@@ -26,7 +32,6 @@ def executeRequest(aInSession, aInMethod, aInHeaders, aInUrl, aInBody=None):
         logging.debug("Executing POST: " + aInUrl)
         res = aInSession.post(aInUrl, headers=aInHeaders, data=json.dumps(aInBody))
     elif aInMethod.lower() == "put":
-        #logging.debug("Executing PUT: " + aInUrl)
         print("Executing PUT: " + aInUrl)
         res = aInSession.post(aInUrl, headers=aInHeaders, data=json.dumps(aInBody))
 
@@ -39,6 +44,10 @@ def prepareRestCallAndExecute(aInSession, aInMethod, aInUri, aInBody=None):
     return executeRequest(aInSession, aInMethod, headers, esUrl, aInBody) 
     
 def checkEsServerStatus(aInSession):
+    '''
+    HELPER: Just executes a count to check if elastic search is running
+    In real system, use health check calls
+    '''
     method = "GET"
     uri = "_count"
     res = prepareRestCallAndExecute(aInSession, method, uri)
@@ -49,6 +58,9 @@ def checkEsServerStatus(aInSession):
     
 
 def esCreateSectionFieldData(aInSession):
+    '''
+    CREATE: Indexes section fielddata which is not indexed by default
+    '''
     method = "PUT"
     uri = "_mapping/doc"
     body = {
@@ -82,9 +94,14 @@ def esCreateSectionFieldData(aInSession):
         print (res.text)
     return jRes["acknowledged"]
 
-def esGetAggregate(aInSession):
+def esGetAggregate(aInSession, aInSecs=None):
+    '''
+    GET: Get all logs from last aInSecs and sort them by the custom index section
+    '''
     method = "POST"
     uri = "_search"
+    if aInSecs is None:
+        aInSecs = '10s'
     body = {
                "size": 0,
                "aggs":{
@@ -97,7 +114,7 @@ def esGetAggregate(aInSession):
                        "date_range": {
                            "field": "@timestamp",
                            "ranges": [
-                               { "from": "now/s-10s" }
+                               { "from": "now/s-" + aInSecs }
                            ]
                        },
                        "aggs": {
@@ -119,9 +136,14 @@ def esGetAggregate(aInSession):
     return jRes["aggregations"]["overall"]["buckets"], jRes["aggregations"]["by_time"]["buckets"][0]["top_count"]["buckets"]
 
 
-def esGetAggregateIp(aInSession):
+def esGetAggregateIp(aInSession, aInSecs=None):
+    '''
+    GET: Get count of IPs in the last 10s in descending order
+    '''
     method = "POST"
     uri = "_search"
+    if aInSecs is None:
+        aInSecs = '10s'
     body = {
                "size": 0,
                "aggs":{
@@ -134,7 +156,7 @@ def esGetAggregateIp(aInSession):
                        "date_range": {
                            "field": "@timestamp",
                            "ranges": [
-                               { "from": "now/s-10s" }
+                               { "from": "now/s-" + str(aInSecs) }
                            ]
                        },
                        "aggs": {
@@ -155,12 +177,14 @@ def esGetAggregateIp(aInSession):
         print (res.text)
     return jRes["aggregations"]["by_time"]["buckets"][0]["top_count"]["buckets"]
 
-
-
-
-def esGetHitCountLastMins(aInSession, aInMins):
+def esGetHitCountLastMins(aInSession, aInMins=None):
+    '''
+    GET: Get a count of hits for last aInMins
+    '''
     method = "POST"
     uri = "_count"
+    if aInMins is None:
+        aInMins = '2m'
     body = {
                "query":{
                    "range":{
@@ -176,7 +200,11 @@ def esGetHitCountLastMins(aInSession, aInMins):
         print (res.text)
     return jRes["count"]
 
-     
+'''
+Exposed functions. These are the functions to be used by clients
+Ideally encapsulate these all in a class. Make above functions private and below functions public
+'''
+
 def getTopHits(aInNum):
     buckets = esGetAggregate(globalSession)
     return buckets[:aInNum]
