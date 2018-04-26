@@ -71,3 +71,5 @@ This consumes heap memory but gives higher speed. Tradeoff. For a real time app 
 
 * 8. No batching of queries. With the small description, it didn't seem like batching is necessary
 
+* 9. No automated unittesting. I have some simple requests and responses but since this is a console output program, it needs quite some structure to pattern match output. Again, no idea how much credit I'll get for investing so much time
+
