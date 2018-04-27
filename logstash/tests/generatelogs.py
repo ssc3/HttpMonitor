@@ -10,7 +10,7 @@ timestr = time.strftime("%Y%m%d-%H%M%S")
 TESTS_DIR = os.path.dirname(os.path.realpath(__file__))
 
 #f = open('logstash/tests/access.log','w')
-f = open(TESTS_DIR + '/access.log','w')
+f = open(TESTS_DIR + '/access.log','a+')
 
 ips=["123.221.14.56","16.180.70.237","10.182.189.79","218.193.16.244","198.122.118.164","114.214.178.92","233.192.62.103","244.157.45.12","81.73.150.239","237.43.24.118"]
 referers=["-","http://www.casualcyclist.com","http://bestcyclingreviews.com/top_online_shops","http://bleater.com","http://searchengine.com"]

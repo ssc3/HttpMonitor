@@ -25,14 +25,11 @@ class AlertMsg():
         self.count = aInCount
 
 prevAlertsHistory = []
-sentinelAlert = AlertMsg(0.0, "", 0)
-prevAlertsHistory.append(sentinelAlert)
 
 class TableData():
     '''
     A class which represents the object to be printed for HITs summary
     '''
-
     def __init__(self, aInSection, aInCount):
         self.section = "/" + aInSection
         self.count = aInCount
@@ -44,12 +41,10 @@ class TableData():
     def setTimed(self, aInTimedCount):
         self.timedCount = aInTimedCount
 
-
 def printTable(aInList=None):
     '''
     Print summary of hits in an asciiart console table
     '''
-
     tab.clear_rows()
 
     for item in aInList:
@@ -108,6 +103,10 @@ def checkAndDisplayAlert(aInTimeStamp):
 def displayTopHits(aInScheduler, aInStartTime, aInEventName, aInPeriod, aInPriority):
     '''
     An event which is called every 10s to display top hits and to check for alerts
+    Uses key value map to record all time top HITs and then, gets HITs on those urls for the last 10s
+    Then it sorts that map in a lambda function before printing it.
+
+    The sorting and printing should really be a separate thread
     '''
     startEventSection(aInScheduler, aInStartTime, aInEventName)
  
@@ -155,15 +154,18 @@ def begin():
         print(traceback.format_exc())
         sys.exit(1)
 
+    sentinelAlert = AlertMsg(0.0, "", 0)
+    prevAlertsHistory.append(sentinelAlert)
+
     print ("ElasticSearch started with " + str(docCount) + " docs")
+
     scheduler = sched.scheduler(time.time, time.sleep)
     startTime = time.time()
-    print("EVENT: {} name={} elapsed={} secs".format(time.ctime(startTime), "START", 0))
-    scheduler.enter(10, 1, displayTopHits, (scheduler, startTime, "displayTopHits", 10, 1))
-    
-    scheduler.run()
 
-    
+    print("EVENT: {} name={} elapsed={} secs".format(time.ctime(startTime), "START", 0))
+
+    scheduler.enter(10, 1, displayTopHits, (scheduler, startTime, "displayTopHits", 10, 1))
+    scheduler.run()
 
 if __name__=="__main__":
     print("Starting HTTP Monitor")
