@@ -40,7 +40,7 @@ The general workfow is:
 * 2. Input to logstash is an access.log file and output is elastisearch (see: logstash/conf/pipeline.conf)
 
 Logstash is configured to create a new field in documents dumped into elastic search.
-This feild is called "section". The reason for doing this to create an index on "section" for faster queries.
+This field is called "section". The reason for doing this to create an index on "section" for faster queries.
 An alternative slow but intuitive way to do this would be to just dump docs and for every query, just parse all documents and 
 create a map in memory with key = section and value = count of how many times that section got hit.
 
