@@ -59,11 +59,11 @@ This consumes heap memory but gives higher speed. Tradeoff. For a real time app 
 
 * 2. There is a latency between log generation and elasticsearch making that data available for querying (probably a gap of seconds). This needs more time to investigate
 
-* 3. I dould have calculated running average in memory for alerting about traffic in past 2 mins. I chose not to do it and just wet ahead with querying elasticsearch. Why? Because running average calculation will take more time and I'm not sure I get credit for putting in that effort in a takehome
+* 3. I could have calculated running average in memory for alerting about traffic in past 2 mins. I chose not to do it and just wet ahead with querying elasticsearch. Why? Because running average calculation will take more time and I'm not sure I get credit for putting in that effort in a takehome
 
 * 4. I did not use logging. Everything is printed
 
-* 5. No persistent storage to accompany elasticsearch. I considered cassandra before elasticsearch but decided against it since without info, I assumed that the application speed was more important than long term storage. If long term persisten storage is necessary, it should have been mentioned
+* 5. No persistent storage to accompany elasticsearch. I considered cassandra before elasticsearch but decided against it since without info, I assumed that the application speed was more important than long term storage. If long term persistent storage is necessary, it should have been mentioned
 
 * 6. No thought to scaling and redundancy/availability since no credit for it
 
