@@ -15,6 +15,8 @@ In another tab do:
 To generate traffic, in another tab do:
 * ./generate_logs.sh
 
+Watch this screencast: https://www.youtube.com/watch?v=auOZEiNaX9M
+
 
 # DESIGN CONSIDERATIONS:
 
